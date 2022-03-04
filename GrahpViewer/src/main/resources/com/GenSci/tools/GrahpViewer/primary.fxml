@@ -7,28 +7,37 @@
 <?import javafx.scene.control.Slider?>
 <?import javafx.scene.control.Spinner?>
 <?import javafx.scene.control.TextArea?>
+<?import javafx.scene.control.TextField?>
 <?import javafx.scene.control.ToolBar?>
 <?import javafx.scene.layout.Pane?>
-
 
 <Pane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="1100.0" prefWidth="1280.0" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.GenSci.tools.GrahpViewer.PrimaryController">
    <children>
       <ToolBar prefHeight="40.0" prefWidth="1280.0">
         <items>
           <Button fx:id="openAveBtn" mnemonicParsing="false" onAction="#openAveFile" text="openAve" />
-            <Button fx:id="openTypeBtn" mnemonicParsing="false" onAction="#openTypeFile" text="openType" />
             <Button fx:id="drawBtn" mnemonicParsing="false" onAction="#execAction" text="Draw" />
             <Button fx:id="saveBtn" mnemonicParsing="false" onAction="#saveAction" text="save" />
             <Button fx:id="quitBtn" mnemonicParsing="false" onAction="#quitAction" text="quit" />
             <Label text="exp:" />
             <Spinner fx:id="expSpinner" editable="true" />
+            <Slider fx:id="genSlider" prefHeight="14.0" prefWidth="500.0" />
+            <Label text="Gen : " />
+            <TextField fx:id="genTextField" prefHeight="25.0" prefWidth="54.0" />
         </items>
       </ToolBar>
-      <Canvas fx:id="aveCanvas" height="460.0" layoutY="40.0" width="1280.0" />
-      <Separator layoutY="520.0" prefHeight="17.0" prefWidth="1280.0" />
-      <Canvas fx:id="typeCanvas" height="445.0" layoutY="537.0" width="1280.0" />
-      <TextArea fx:id="log" layoutX="3.0" layoutY="999.0" prefHeight="93.0" prefWidth="1274.0" />
-      <Slider fx:id="typeSlider" layoutX="126.0" layoutY="985.0" prefHeight="14.0" prefWidth="1106.0" />
-      <Slider fx:id="aveSlider" layoutX="126.0" layoutY="513.0" prefHeight="14.0" prefWidth="1106.0" />
+      <Canvas fx:id="aveCanvas" height="430.0" layoutY="40.0" width="1280.0" />
+      <Canvas fx:id="aveLineCanvas" height="430.0" layoutY="40.0" width="1280.0" />
+      <Separator layoutX="-3.0" layoutY="482.0" prefHeight="17.0" prefWidth="1280.0" />
+      <Canvas fx:id="typeCanvas" height="430.0" layoutY="527.0" width="1280.0" />
+      <Canvas fx:id="typeLineCanvas" height="430.0" layoutY="525.0" width="1280.0" />
+      <TextArea fx:id="log" layoutX="3.0" layoutY="986.0" prefHeight="100.0" prefWidth="1274.0" />
+      <ToolBar layoutX="3.0" layoutY="485.0" prefHeight="40.0" prefWidth="200.0">
+        <items>
+            <Button fx:id="openTypeBtn" mnemonicParsing="false" onAction="#openTypeFile" text="openType" />
+          <Button mnemonicParsing="false" text="Button" />
+            <Button mnemonicParsing="false" text="Button" />
+        </items>
+      </ToolBar>
    </children>
 </Pane>
