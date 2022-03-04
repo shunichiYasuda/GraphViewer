@@ -21,6 +21,7 @@ import javafx.fxml.Initializable;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.control.Button;
+import javafx.scene.control.Label;
 import javafx.scene.control.Slider;
 import javafx.scene.control.Spinner;
 import javafx.scene.control.SpinnerValueFactory;
@@ -66,6 +67,8 @@ public class PrimaryController implements Initializable {
 	Slider genSlider;
 	@FXML
 	TextField genTextField;
+	@FXML
+	Label aveValueLabel;
 	//
 	GraphicsContext gAve; // 平均値描画
 	GraphicsContext gType; // タイプ別比率描画
@@ -75,8 +78,8 @@ public class PrimaryController implements Initializable {
 	// ファイルが読まれた後から設定されてしまうパラメータ
 	int GEN; // 世代数
 	int EXP; // 実験数。
-	int nowGen;//現在の世代
-	int nowExp = 0; //現在の実験番号。これは expSpinner で変更される。
+	int nowGen;// 現在の世代
+	int nowExp = 0; // 現在の実験番号。これは expSpinner で変更される。
 	double[][] aveDataTable;
 	double[][] typeDataTable;
 	double[] nowExpAveData; // 実験番号が定まった後から中身が入る平均値
@@ -89,7 +92,7 @@ public class PrimaryController implements Initializable {
 	int top, bottom, left, right;
 	// グラフエリアの高さ・幅
 	int gHeight, gWidth;
-	//グラフエリアの中のマージン
+	// グラフエリアの中のマージン
 	int margin = 30;
 	boolean aveDataFlag = false; // 平均データを読み込んだら true にする。
 	String dir = null; // データのディレクトリ
@@ -113,24 +116,6 @@ public class PrimaryController implements Initializable {
 
 	//
 	public void execAction() {
-		width = aveCanvas.getWidth();
-		height = aveCanvas.getHeight();
-		log.appendText("Hello World.W= " + width + "   H=" + height + "\n");
-
-		gAve = aveCanvas.getGraphicsContext2D();
-		gAve.setStroke(Color.DARKBLUE);
-		gAve.strokeLine(0, 0, 100, 100); // (1)
-		//
-		// データを表示させてみる
-//		log.appendText("世代数:" + GEN + "\t実験回数:" + EXP + "\n");
-//		if (aveDataFlag) {
-//			for (int i = 0; i < GEN; i++) {
-//				for (int j = 0; j < EXP; j++) {
-//					log.appendText(aveDataTable[i][j] + ",");
-//				}
-//				log.appendText("\n");
-//			}
-//		}
 
 	}
 
@@ -156,8 +141,54 @@ public class PrimaryController implements Initializable {
 		} // end of for( double 配列にしまいこむ
 		aveDataFlag = true;
 		//
+
+		// ここから平均値グラフの表示
+		// グラフの軸を作りたい。
+		// 横軸（世代軸）は2つのCanvasで共通なのでgraphicContext を渡して作成する。
+		drawXAxis(gAve);
+
+		// double 配列にデータが入ったので、スピナーから実験番号を読んでその列を別の配列に移す。
+		SpinnerValueFactory<Integer> valueFactory1 = new SpinnerValueFactory.IntegerSpinnerValueFactory(0, EXP - 1, 1);
+		expSpinner.setValueFactory(valueFactory1);
+		valueFactory1.setWrapAround(true);
+		valueFactory1.setValue(0);
+
+		nowExp = expSpinner.getValue();
+		// Table から抜き出した配列。
+		nowExpAveData = new double[GEN];
+		for (int i = 0; i < GEN; i++) {
+			nowExpAveData[i] = aveDataTable[i][nowExp];
+			// log.appendText(nowExpAveData[i]+"\n");
+		}
+		// strokPolyLine に渡すための pxel 配列
+		double[] yPix = new double[GEN];
+		double[] xPix = new double[GEN];
+		// データが抜き出されたのでpixelデータを作る
+		makePixelData(xPix, yPix, nowExpAveData, gWidth, gHeight);
+		// 描画。polyLine を使いたい。
+		gAve.strokePolyline(xPix, yPix, GEN);
+		// change Listener をつけて実験回数を spinner で変更するたびにグラフを更新する。
+		expSpinner.valueProperty().addListener(new ChangeListener<Integer>() {
+			@Override
+			public void changed(ObservableValue<? extends Integer> observable, Integer oldValue, Integer newValue) {
+				nowExp = expSpinner.getValue();
+				log.appendText("exp = " + nowExp + "\n");
+				for (int i = 0; i < GEN; i++) {
+					nowExpAveData[i] = aveDataTable[i][nowExp];
+				}
+				// データが抜き出されたのでpixelデータを作る
+				makePixelData(xPix, yPix, nowExpAveData, gWidth, gHeight);
+				// 描画。polyLine を使いたい。
+				gAve.clearRect(0, 0, width, height);
+				gAve.setFill(Color.WHITE);
+				gAve.fillRect(0, 0, width, height);
+				drawXAxis(gAve);
+				gAve.strokePolyline(xPix, yPix, GEN);
+			}
+		});
+		//
 		// スライダーによる世代を示す赤線をかぶせる。
-		genSlider.setMax(GEN);
+		genSlider.setMax(GEN-1);
 		genSlider.setMajorTickUnit(GEN / 10.0);
 		genSlider.valueProperty().addListener(new ChangeListener<Number>() {
 			@Override
@@ -165,7 +196,7 @@ public class PrimaryController implements Initializable {
 				nowGen = newValue.intValue();
 				genTextField.setText("" + nowGen);
 				double coeff = gWidth / GEN;
-				int xPos = (int) (coeff * nowGen)+margin;
+				int xPos = (int) (coeff * nowGen) + margin;
 				if (nowGen != 0 && nowGen != GEN) {
 					gAveLine.clearRect(0, 0, width, height);
 					gAveLine.setStroke(Color.RED);
@@ -177,36 +208,76 @@ public class PrimaryController implements Initializable {
 					gAveLine.clearRect(0, 0, width, height);
 					gTypeLine.clearRect(0, 0, width, height);
 				}
-			}
+				//赤線上の平均値を Label に表示する。
+				double v = nowExpAveData[nowGen];
+				String str = new String(""+v);
+				aveValueLabel.setText(str);
+			} // end of changed()
 
 		});
-		//グラフの軸を作りたい。
-		//横軸（世代軸）は2つのCanvasで共通なのでgraphicContext を渡して作成する。
-		drawXAxis(gAve);
-		// double 配列にデータが入ったので、スピナーから実験番号を読んでその列を別の配列に移す。
-		SpinnerValueFactory<Integer> valueFactory1 = new SpinnerValueFactory.IntegerSpinnerValueFactory(0, EXP - 1, 1);
-		expSpinner.setValueFactory(valueFactory1);
+	} // end of openAveFile()
 
+	// x軸、y軸のpixelデータを作成する。
+	public void makePixelData(double[] xPix, double[] yPix, double[] yData, int w, int h) {
+		// x軸方向についてはこのメソッドの中で作ってしまうので引数に元データはない。
+		double[] y = translate(h, yData);
+		for (int i = 0; i < GEN; i++) {
+			double d = y[i];
+			d = d + margin;
+			y[i] = d;
+		} // end of for(yPix の margin 調整
+		for (int i = 0; i < GEN; i++) {
+			// このように引数配列に直接値を入れないと渡した側の配列が変わらない。なぜ？
+			yPix[i] = y[i];
+		}
+		double par = w / GEN;
+		xPix[0] = 0.0;
+		for (int i = 1; i < GEN; i++) {
+			xPix[i] = xPix[i - 1] + par;
+		}
+		for (int i = 0; i < GEN; i++) {
+			double d = xPix[i];
+			d = d + margin;
+			xPix[i] = d;
+		}
+		//
+	} // end of makePixelData()
+
+	// translate pixel 幅と double配列を与えられて、pixel値の配列を返す。
+	public double[] translate(int height, double[] data) {
+		// canvas.strokPolyLine() がdouble[] をとるので。
+		double[] d = new double[data.length];
+		double maxValue = 3.0;
+		// 数値1.0あたりの pixel数
+		double par = gHeight / maxValue;
+		// log.appendText("height=" + height + "par=" + par + "\n");
+		// 配列r に pixel換算されたデータが入るが、グラフの座標は top が0なので
+		// pixelとしては数値の最大が高さ座標は0。したがって、あらかじめ
+		// データの値をすべて最大値からひいたものにしておく。
+		for (int i = 0; i < data.length; i++) {
+			d[i] = par * (maxValue - data[i]);
+		}
+		return d;
 	}
-	
-	//x軸を作る
+
+	// x軸を作る
 	public void drawXAxis(GraphicsContext g) {
 		g.strokeLine(left, bottom, right, bottom);
-		int tickTop =bottom;
+		int tickTop = bottom;
 		int tickBottom = tickTop + 10;
-		//世代数の長さに応じて、目盛りが違う。
-		//1世代あたりpixel値
-		int par = (int)(gWidth / GEN);
-		log.appendText("par = "+par+"gWidth= "+gWidth+"\t"+(right - left)+"\n");
+		// 世代数の長さに応じて、目盛りが違う。
+		// 1世代あたりpixel値
+		int par = (int) (gWidth / GEN);
+		//log.appendText("par = " + par + "gWidth= " + gWidth + "\t" + (right - left) + "\n");
 		int dist = left;
-		for(int i=0;i<GEN;i++) { 
-			String str = new String(""+i);
-			if((i%10)==0) {
+		for (int i = 0; i < GEN; i++) {
+			String str = new String("" + i);
+			if ((i % 10) == 0) {
 				g.strokeText(str, dist, tickBottom);
 			}
 			dist += par;
 		}
-		String str = new String(""+(GEN-1));
+		String str = new String("" + (GEN - 1));
 		g.strokeText(str, dist, tickBottom);
 	}
 

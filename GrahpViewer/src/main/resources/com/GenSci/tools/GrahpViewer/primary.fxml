@@ -16,7 +16,6 @@
       <ToolBar prefHeight="40.0" prefWidth="1280.0">
         <items>
           <Button fx:id="openAveBtn" mnemonicParsing="false" onAction="#openAveFile" text="openAve" />
-            <Button fx:id="drawBtn" mnemonicParsing="false" onAction="#execAction" text="Draw" />
             <Button fx:id="saveBtn" mnemonicParsing="false" onAction="#saveAction" text="save" />
             <Button fx:id="quitBtn" mnemonicParsing="false" onAction="#quitAction" text="quit" />
             <Label text="exp:" />
@@ -24,6 +23,8 @@
             <Slider fx:id="genSlider" prefHeight="14.0" prefWidth="500.0" />
             <Label text="Gen : " />
             <TextField fx:id="genTextField" prefHeight="25.0" prefWidth="54.0" />
+            <Label text="ave value = " />
+            <Label fx:id="aveValueLabel" prefHeight="17.0" prefWidth="62.0" />
         </items>
       </ToolBar>
       <Canvas fx:id="aveCanvas" height="430.0" layoutY="40.0" width="1280.0" />
