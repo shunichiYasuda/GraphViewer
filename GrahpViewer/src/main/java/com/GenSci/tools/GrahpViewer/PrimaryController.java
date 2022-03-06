@@ -6,6 +6,8 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
@@ -21,6 +23,7 @@ import javafx.fxml.Initializable;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.control.Button;
+import javafx.scene.control.CheckBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.Slider;
 import javafx.scene.control.Spinner;
@@ -32,6 +35,7 @@ import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.stage.FileChooser;
+import javafx.stage.Stage;
 //import javafx.embed.swing.SwingFXUtils;
 
 public class PrimaryController implements Initializable {
@@ -67,8 +71,36 @@ public class PrimaryController implements Initializable {
 	Slider genSlider;
 	@FXML
 	TextField genTextField;
+	//
 	@FXML
 	Label aveValueLabel;
+	@FXML
+	CheckBox cb0_contorary; // あまのじゃく
+	@FXML
+	CheckBox cb1_yesman; // お人好し
+	@FXML
+	CheckBox cb2_trator; // 裏切り者
+	@FXML
+	CheckBox cb3_TFT; // TFT
+	// @FXML CheckBox cb4_gTypeTFT; //遺伝子型から見たTFT配列
+	@FXML
+	CheckBox cb4_All0; // 記憶領域All 0
+	@FXML
+	CheckBox cb5_All1; // 記憶領域All 1
+	@FXML
+	Label chLabel0;
+	@FXML
+	Label chLabel1;
+	@FXML
+	Label chLabel2;
+	@FXML
+	Label chLabel3;
+	@FXML
+	Label chLabel4;
+	@FXML
+	Label chLabel5;
+	//
+
 	//
 	GraphicsContext gAve; // 平均値描画
 	GraphicsContext gType; // タイプ別比率描画
@@ -95,6 +127,7 @@ public class PrimaryController implements Initializable {
 	// グラフエリアの中のマージン
 	int margin = 30;
 	boolean aveDataFlag = false; // 平均データを読み込んだら true にする。
+	boolean typeDataFlag = false;
 	String dir = null; // データのディレクトリ
 
 	//
@@ -146,7 +179,8 @@ public class PrimaryController implements Initializable {
 		// グラフの軸を作りたい。
 		// 横軸（世代軸）は2つのCanvasで共通なのでgraphicContext を渡して作成する。
 		drawXAxis(gAve);
-
+		// 縦軸も共通だが、最大値が異なるため最大値も渡す。
+		drawYAxis(gAve, 3.0);
 		// double 配列にデータが入ったので、スピナーから実験番号を読んでその列を別の配列に移す。
 		SpinnerValueFactory<Integer> valueFactory1 = new SpinnerValueFactory.IntegerSpinnerValueFactory(0, EXP - 1, 1);
 		expSpinner.setValueFactory(valueFactory1);
@@ -183,12 +217,13 @@ public class PrimaryController implements Initializable {
 				gAve.setFill(Color.WHITE);
 				gAve.fillRect(0, 0, width, height);
 				drawXAxis(gAve);
+				drawYAxis(gAve, 3.0);
 				gAve.strokePolyline(xPix, yPix, GEN);
 			}
 		});
 		//
 		// スライダーによる世代を示す赤線をかぶせる。
-		genSlider.setMax(GEN-1);
+		genSlider.setMax(GEN - 1);
 		genSlider.setMajorTickUnit(GEN / 10.0);
 		genSlider.valueProperty().addListener(new ChangeListener<Number>() {
 			@Override
@@ -197,7 +232,7 @@ public class PrimaryController implements Initializable {
 				genTextField.setText("" + nowGen);
 				double coeff = gWidth / GEN;
 				int xPos = (int) (coeff * nowGen) + margin;
-				if (nowGen != 0 && nowGen != GEN) {
+				if (nowGen != 0 && nowGen != GEN - 1) {
 					gAveLine.clearRect(0, 0, width, height);
 					gAveLine.setStroke(Color.RED);
 					gAveLine.strokeLine(xPos, 0, xPos, height);
@@ -208,9 +243,9 @@ public class PrimaryController implements Initializable {
 					gAveLine.clearRect(0, 0, width, height);
 					gTypeLine.clearRect(0, 0, width, height);
 				}
-				//赤線上の平均値を Label に表示する。
+				// 赤線上の平均値を Label に表示する。
 				double v = nowExpAveData[nowGen];
-				String str = new String(""+v);
+				String str = new String("" + v);
 				aveValueLabel.setText(str);
 			} // end of changed()
 
@@ -268,7 +303,8 @@ public class PrimaryController implements Initializable {
 		// 世代数の長さに応じて、目盛りが違う。
 		// 1世代あたりpixel値
 		int par = (int) (gWidth / GEN);
-		//log.appendText("par = " + par + "gWidth= " + gWidth + "\t" + (right - left) + "\n");
+		// log.appendText("par = " + par + "gWidth= " + gWidth + "\t" + (right - left) +
+		// "\n");
 		int dist = left;
 		for (int i = 0; i < GEN; i++) {
 			String str = new String("" + i);
@@ -277,22 +313,92 @@ public class PrimaryController implements Initializable {
 			}
 			dist += par;
 		}
-		String str = new String("" + (GEN - 1));
-		g.strokeText(str, dist, tickBottom);
+//		String str = new String("" + (GEN - 1));
+//		g.strokeText(str, dist, tickBottom);
+	}
+
+	// y軸を作る。データによって最大値が異なるため、最大値を double で与える。
+	public void drawYAxis(GraphicsContext g, double maxValue) {
+		// まずは直線
+		g.strokeLine(left, bottom, left, top);
+		// 目盛りをつくる。
+		// 目盛りの数値。分割数5
+		int N = 5;
+		double part = maxValue / (double) N;
+		// 目盛り配列を作っておいた方が楽.
+		// 0から最大値まで入るので分割数+1の配列が筆王
+		double[] tickValue = new double[N + 1];
+		for (int i = 0; i < tickValue.length; i++) {
+			tickValue[i] = part * i;
+			// log.appendText(tickValue[i]+"\n");
+		}
+		// 上で作ったのは0.0 からmaxValue まで順に並んだ刻みの数値。
+		// 1.0 あたりpixel値
+		double tmp = gHeight / maxValue;
+		// 表示する画面上の位置は一番上が0なのでposition は最大値から刻みの値を引いた
+		// 数値を入れなければならない
+		double[] pos = new double[N + 1];
+		for (int i = 0; i < pos.length; i++) {
+			pos[i] = (maxValue - tickValue[i]) * tmp + margin;
+		}
+		// 表示する数値は綺麗にまるめて、Stringである。
+		String[] str = new String[pos.length];
+		for (int i = 0; i < tickValue.length; i++) {
+			double d = round(tickValue[i], 1);// 小数点以下1ケタ
+			str[i] = new String("" + d);
+		}
+		// 表示する。
+		for (int i = 0; i < tickValue.length; i++) {
+			g.strokeText(str[i], left - 18, pos[i]);
+		}
+
 	}
 
 	public void openTypeFile() {
 		openAction(typeDataStr);
+		// 1行取り出す
+		String str = typeDataStr.get(0);
+		// log.appendText(str + "\n");
+		String[] row = str.split("\t");
+		System.out.println("data columns ="+row.length);
+		// log.appendText(row.length + "\tgen=" + typeDataStr.size() + "\n");
+		//EXPとGENは平均値ファイルを読んだときに決められる。ファイルの形式が異なるので
+		//type ファイルから決めてはダメ。
+		// データを double配列にしまい込む。このとき、typeDataTable は
+		//「全実験」のデータを行に持つので、行数は GENではない。
+		typeDataTable = new double[GEN*EXP][row.length];
+		for(int i=0;i<typeDataTable.length;i++) {
+			str = typeDataStr.get(i); // 一行読み込んだ
+			row = str.split("\t"); // tab 区切りで列を分けた
+			for (int j = 0; j < row.length; j++) {
+				typeDataTable[i][j] = Double.parseDouble(row[j]);
+			}
+		}
+		//ここではファイルを開いた最初なので実験番号は0だとして、
+		//nowExpTypeData[][] に0番目の実験結果を書き込む.0番目の実験なので行数はGENである。
+		//0行目から入れていく。
+		nowExpTypeData = new double[GEN][row.length];
+		for (int i = 0; i < GEN; i++) {
+			for(int j=0;j<row.length;j++) {
+				nowExpTypeData[i][j] = typeDataTable[i][j];
+			}
+		} // end of for( double 配列にしまいこむ
+		//考え方を根本的に変える Mar06。
+		
+		//
+		typeDataFlag = true;
+		// 横軸（世代軸）は2つのCanvasで共通なのでgraphicContext を渡して作成する。
+		drawXAxis(gType);
+		// 縦軸も共通だが、最大値が異なるため最大値も渡す。
+		drawYAxis(gType, 100.0);
 	}
 
 	//
 	public void openAction(List<String> list) {
 		FileChooser fc = new FileChooser();
-		if (dir != null) {
-			fc.setInitialDirectory(new File(dir));
-		}
+		File file;
 		fc.setTitle("open data file");
-		File file = fc.showOpenDialog(null);
+		file = fc.showOpenDialog(null);
 		dir = file.getAbsolutePath();
 		try {
 			FileReader fr = new FileReader(file);
@@ -371,5 +477,12 @@ public class PrimaryController implements Initializable {
 //
 //		});
 
+	} // end of initialize
+		//
+
+	public double round(double in, int scale) {
+		double after = 0.0;
+		after = new BigDecimal(String.valueOf(in)).setScale(scale, RoundingMode.HALF_UP).doubleValue();
+		return after;
 	}
 }
