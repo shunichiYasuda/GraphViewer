@@ -38,18 +38,7 @@
         <items>
             <Button fx:id="openTypeBtn" mnemonicParsing="false" onAction="#openTypeFile" text="openType" />
           <Button fx:id="saveTypeBtn" mnemonicParsing="false" text="save" />
-            <CheckBox fx:id="cb0_contorary" mnemonicParsing="false" selected="true" text="#1" />
-            <Label fx:id="chLabel0" text="Label" />
-            <CheckBox fx:id="cb1_yesman" layoutX="183.0" layoutY="17.0" mnemonicParsing="false" selected="true" text="#2" />
-            <Label fx:id="chLabel1" layoutX="260.0" layoutY="17.0" text="Label" />
-            <CheckBox fx:id="cb2_trator" layoutX="292.0" layoutY="17.0" mnemonicParsing="false" selected="true" text="#3" />
-            <Label fx:id="chLabel2" layoutX="369.0" layoutY="17.0" text="Label" />
-            <CheckBox fx:id="cb3_TFT" layoutX="401.0" layoutY="17.0" mnemonicParsing="false" selected="true" text="#4" />
-            <Label fx:id="chLabel3" layoutX="478.0" layoutY="17.0" text="Label" />
-            <CheckBox fx:id="cb4_All0" layoutX="510.0" layoutY="17.0" mnemonicParsing="false" text="#5" />
-            <Label fx:id="chLabel4" layoutX="587.0" layoutY="17.0" text="Label" />
-            <CheckBox fx:id="cb5_All1" layoutX="619.0" layoutY="17.0" mnemonicParsing="false" text="#6" />
-            <Label fx:id="chLabel5" layoutX="696.0" layoutY="17.0" text="Label" />
+            <CheckBox fx:id="cb0_All01" mnemonicParsing="false" text="All 0, 1" />
         </items>
       </ToolBar>
    </children>

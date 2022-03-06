@@ -75,30 +75,8 @@ public class PrimaryController implements Initializable {
 	@FXML
 	Label aveValueLabel;
 	@FXML
-	CheckBox cb0_contorary; // あまのじゃく
-	@FXML
-	CheckBox cb1_yesman; // お人好し
-	@FXML
-	CheckBox cb2_trator; // 裏切り者
-	@FXML
-	CheckBox cb3_TFT; // TFT
-	// @FXML CheckBox cb4_gTypeTFT; //遺伝子型から見たTFT配列
-	@FXML
-	CheckBox cb4_All0; // 記憶領域All 0
-	@FXML
-	CheckBox cb5_All1; // 記憶領域All 1
-	@FXML
-	Label chLabel0;
-	@FXML
-	Label chLabel1;
-	@FXML
-	Label chLabel2;
-	@FXML
-	Label chLabel3;
-	@FXML
-	Label chLabel4;
-	@FXML
-	Label chLabel5;
+	CheckBox cb0_All01; // あまのじゃく
+
 	//
 
 	//
@@ -360,37 +338,72 @@ public class PrimaryController implements Initializable {
 		String str = typeDataStr.get(0);
 		// log.appendText(str + "\n");
 		String[] row = str.split("\t");
-		System.out.println("data columns ="+row.length);
+		System.out.println("data columns =" + row.length);
 		// log.appendText(row.length + "\tgen=" + typeDataStr.size() + "\n");
-		//EXPとGENは平均値ファイルを読んだときに決められる。ファイルの形式が異なるので
-		//type ファイルから決めてはダメ。
+		// EXPとGENは平均値ファイルを読んだときに決められる。ファイルの形式が異なるので
+		// type ファイルから決めてはダメ。
 		// データを double配列にしまい込む。このとき、typeDataTable は
-		//「全実験」のデータを行に持つので、行数は GENではない。
-		typeDataTable = new double[GEN*EXP][row.length];
-		for(int i=0;i<typeDataTable.length;i++) {
+		// 「全実験」のデータを行に持つので、行数は GENではない。
+		typeDataTable = new double[GEN * EXP][row.length];
+		for (int i = 0; i < typeDataTable.length; i++) {
 			str = typeDataStr.get(i); // 一行読み込んだ
 			row = str.split("\t"); // tab 区切りで列を分けた
 			for (int j = 0; j < row.length; j++) {
 				typeDataTable[i][j] = Double.parseDouble(row[j]);
 			}
 		}
-		//ここではファイルを開いた最初なので実験番号は0だとして、
-		//nowExpTypeData[][] に0番目の実験結果を書き込む.0番目の実験なので行数はGENである。
-		//0行目から入れていく。
+		// ここではファイルを開いた最初なので実験番号は0だとして、
+		// nowExpTypeData[][] に0番目の実験結果を書き込む.0番目の実験なので行数はGENである。
+		// 0行目から入れていく。
 		nowExpTypeData = new double[GEN][row.length];
-		for (int i = 0; i < GEN; i++) {
-			for(int j=0;j<row.length;j++) {
-				nowExpTypeData[i][j] = typeDataTable[i][j];
-			}
-		} // end of for( double 配列にしまいこむ
-		//考え方を根本的に変える Mar06。
-		
+
 		//
 		typeDataFlag = true;
 		// 横軸（世代軸）は2つのCanvasで共通なのでgraphicContext を渡して作成する。
 		drawXAxis(gType);
 		// 縦軸も共通だが、最大値が異なるため最大値も渡す。
 		drawYAxis(gType, 100.0);
+		// 考え方を根本的に変える Mar06。
+		// 最初の4列（type別個体数）を最初に書いておいて、チェックボタンで別のcanvas に
+		// のこり2つを描いておき、チェックボタンで表示させるようにする。だからその処理はあとでいい。
+		// だから最初の4列を順番に配列に取り出し、それを表示させる。
+		// 平均値データが先に読み込まれているとすれば、nowGen に値は入っているのだから
+		// すぐにChangeLestener でよいのでは。
+		double[] nowTypeRecord = new double[GEN];
+
+		expSpinner.valueProperty().addListener(new ChangeListener<Integer>() {
+			@Override
+			public void changed(ObservableValue<? extends Integer> observable, Integer oldValue, Integer newValue) {
+				nowExp = expSpinner.getValue();
+				// typeファイルの場合は実験ごとにテーブルが更新されるので、スピナー値が変わるたびに
+				// テーブルが書き換えられなければならない。
+				// 列ごとに処理しよう
+				for (int j = 0; j < 4; j++) {
+					int count = 0;
+					while (count < GEN) {// ただし、こうしてTable自体を更新するのはムダである。
+						nowExpTypeData[count][j] = typeDataTable[nowExp * GEN + count][j];
+						count++;
+					}
+				}
+				// こんどはnowExpTypeDataテーブルから一つずつ列を取り出す。
+				for (int j = 0; j < 4; j++) {
+					for (int i = 0; i < GEN; i++) {
+						nowTypeRecord[i] = nowExpTypeData[i][j];
+					}
+				}
+
+				// データが抜き出されたのでpixelデータを作る
+				//makePixelData(xPix, yPix, nowExpAveData, gWidth, gHeight);
+				// 描画。polyLine を使いたい。
+				gAve.clearRect(0, 0, width, height);
+				gAve.setFill(Color.WHITE);
+				gAve.fillRect(0, 0, width, height);
+				drawXAxis(gAve);
+				drawYAxis(gAve, 3.0);
+				//gAve.strokePolyline(xPix, yPix, GEN);
+			}
+		});
+
 	}
 
 	//
