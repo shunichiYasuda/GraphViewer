@@ -31,6 +31,11 @@ import javafx.scene.control.SpinnerValueFactory;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.image.WritableImage;
+import javafx.scene.layout.Border;
+import javafx.scene.layout.BorderStroke;
+import javafx.scene.layout.BorderStrokeStyle;
+import javafx.scene.layout.BorderWidths;
+import javafx.scene.layout.CornerRadii;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
@@ -39,8 +44,6 @@ import javafx.stage.Stage;
 //import javafx.embed.swing.SwingFXUtils;
 
 public class PrimaryController implements Initializable {
-	// private static final double RADIUS = 10_000f;
-	// private DoubleProperty scale = new SimpleDoubleProperty(1.0);
 	@FXML
 	Button openAveBtn;
 	@FXML
@@ -75,10 +78,19 @@ public class PrimaryController implements Initializable {
 	@FXML
 	Label aveValueLabel;
 	@FXML
-	CheckBox cb0_All01; // あまのじゃく
-
+	CheckBox cb_All01;
 	//
-
+	Color[] typeColor; // type別グラフの色
+	@FXML
+	Label lb0; // あまのじゃくの数
+	@FXML
+	Label lb1; // お人好しの数
+	@FXML
+	Label lb2; // 裏切り者の数
+	@FXML
+	Label lb3; // 互恵主義者の数
+	//ラベルに枠線を付けて色分けし、わかりやすくする。
+	Border[] border;
 	//
 	GraphicsContext gAve; // 平均値描画
 	GraphicsContext gType; // タイプ別比率描画
@@ -176,7 +188,7 @@ public class PrimaryController implements Initializable {
 		double[] yPix = new double[GEN];
 		double[] xPix = new double[GEN];
 		// データが抜き出されたのでpixelデータを作る
-		makePixelData(xPix, yPix, nowExpAveData, gWidth, gHeight);
+		makePixelData(xPix, yPix, nowExpAveData, gWidth, gHeight, 3.0);
 		// 描画。polyLine を使いたい。
 		gAve.strokePolyline(xPix, yPix, GEN);
 		// change Listener をつけて実験回数を spinner で変更するたびにグラフを更新する。
@@ -184,12 +196,12 @@ public class PrimaryController implements Initializable {
 			@Override
 			public void changed(ObservableValue<? extends Integer> observable, Integer oldValue, Integer newValue) {
 				nowExp = expSpinner.getValue();
-				log.appendText("exp = " + nowExp + "\n");
+				// log.appendText("exp = " + nowExp + "\n");
 				for (int i = 0; i < GEN; i++) {
 					nowExpAveData[i] = aveDataTable[i][nowExp];
 				}
 				// データが抜き出されたのでpixelデータを作る
-				makePixelData(xPix, yPix, nowExpAveData, gWidth, gHeight);
+				makePixelData(xPix, yPix, nowExpAveData, gWidth, gHeight, 3.0);
 				// 描画。polyLine を使いたい。
 				gAve.clearRect(0, 0, width, height);
 				gAve.setFill(Color.WHITE);
@@ -231,9 +243,9 @@ public class PrimaryController implements Initializable {
 	} // end of openAveFile()
 
 	// x軸、y軸のpixelデータを作成する。
-	public void makePixelData(double[] xPix, double[] yPix, double[] yData, int w, int h) {
+	public void makePixelData(double[] xPix, double[] yPix, double[] yData, int w, int h, double maxValue) {
 		// x軸方向についてはこのメソッドの中で作ってしまうので引数に元データはない。
-		double[] y = translate(h, yData);
+		double[] y = translate(h, yData, maxValue);
 		for (int i = 0; i < GEN; i++) {
 			double d = y[i];
 			d = d + margin;
@@ -257,10 +269,9 @@ public class PrimaryController implements Initializable {
 	} // end of makePixelData()
 
 	// translate pixel 幅と double配列を与えられて、pixel値の配列を返す。
-	public double[] translate(int height, double[] data) {
+	public double[] translate(int height, double[] data, double maxValue) {
 		// canvas.strokPolyLine() がdouble[] をとるので。
 		double[] d = new double[data.length];
-		double maxValue = 3.0;
 		// 数値1.0あたりの pixel数
 		double par = gHeight / maxValue;
 		// log.appendText("height=" + height + "par=" + par + "\n");
@@ -370,10 +381,51 @@ public class PrimaryController implements Initializable {
 		// 平均値データが先に読み込まれているとすれば、nowGen に値は入っているのだから
 		// すぐにChangeLestener でよいのでは。
 		double[] nowTypeRecord = new double[GEN];
-
+		// strokPolyLine に渡すための pxel 配列
+		double[] yPix = new double[GEN];
+		double[] xPix = new double[GEN];
+		// どうもChangeLestener だけではまずそう Mar07
+		// 列ごとに処理しよう
+		// System.out.println("in openTypeFile() nowExp="+nowExp);
+		for (int j = 0; j < 4; j++) {
+			int count = 0;
+			while (count < GEN) {// ただし、こうしてTable自体を更新するのはムダである。
+				nowExpTypeData[count][j] = typeDataTable[nowExp * GEN + count][j];
+				count++;
+			}
+		}
+		// データチェック
+//		for(double[] array: nowExpTypeData) {
+//			for(double d : array) {
+//				System.out.print(d+"\t");
+//			}
+//			System.out.println();
+//		}
+		// 軸を描く
+		drawXAxis(gType);
+		drawYAxis(gType, 100.0);
+		// こんどはnowExpTypeDataテーブルから一つずつ列を取り出す。
+		for (int j = 0; j < 4; j++) {
+			for (int i = 0; i < GEN; i++) {
+				nowTypeRecord[i] = nowExpTypeData[i][j];
+			}
+			// データが抜き出されたのでpixelデータを作る
+			makePixelData(xPix, yPix, nowTypeRecord, gWidth, gHeight, 100.0);
+			//stroke の色を設定
+			gType.setStroke(typeColor[j]);
+			gType.strokePolyline(xPix, yPix, GEN);
+		} // end of for(最初の4列
 		expSpinner.valueProperty().addListener(new ChangeListener<Integer>() {
 			@Override
 			public void changed(ObservableValue<? extends Integer> observable, Integer oldValue, Integer newValue) {
+				// check
+				// System.out.println("changed is called in openType file");
+				gType.clearRect(0, 0, width, height);
+				gType.setFill(Color.WHITE);
+				gType.fillRect(0, 0, width, height);
+				gType.setStroke(Color.BLACK);
+				drawXAxis(gType);
+				drawYAxis(gType, 100.0);
 				nowExp = expSpinner.getValue();
 				// typeファイルの場合は実験ごとにテーブルが更新されるので、スピナー値が変わるたびに
 				// テーブルが書き換えられなければならない。
@@ -390,18 +442,17 @@ public class PrimaryController implements Initializable {
 					for (int i = 0; i < GEN; i++) {
 						nowTypeRecord[i] = nowExpTypeData[i][j];
 					}
+					// データが抜き出されたのでpixelデータを作る
+					makePixelData(xPix, yPix, nowTypeRecord, gWidth, gHeight, 100.0);
+					//stroke の色を設定
+					gType.setStroke(typeColor[j]);
+					// 描画。
+					gType.strokePolyline(xPix, yPix, GEN);
 				}
 
-				// データが抜き出されたのでpixelデータを作る
-				//makePixelData(xPix, yPix, nowExpAveData, gWidth, gHeight);
-				// 描画。polyLine を使いたい。
-				gAve.clearRect(0, 0, width, height);
-				gAve.setFill(Color.WHITE);
-				gAve.fillRect(0, 0, width, height);
-				drawXAxis(gAve);
-				drawYAxis(gAve, 3.0);
-				//gAve.strokePolyline(xPix, yPix, GEN);
-			}
+				// end of for(最初の4列
+
+			} // end of changed(...
 		});
 
 	}
@@ -475,20 +526,22 @@ public class PrimaryController implements Initializable {
 		right = (int) width - margin;
 		gHeight = bottom - top; // グラフ領域高さのpixel が値 0.0 - 3.0
 		gWidth = right - left; // グラフ領域幅の pixel値
-//		//check
-//		Font font = new Font("Arial",12);
-//		gAve.setFont(font);
-//		gAve.strokeText("Here", 500, 500);
-////		gAve.setStroke(Color.BLACK);
-//		gAve.strokeLine(left, top, right, bottom);
-//		expSpinner.valueProperty().addListener(new ChangeListener<Integer>() {
-//			@Override
-//			public void changed(ObservableValue<? extends Integer> observable, Integer oldValue, Integer newValue) {
-//				// TODO Auto-generated method stub
-//
-//			}
-//
-//		});
+		// type 別グラフの色分け。本当は openTypeFiles でやったほうが良いのかもしれないが。ここでは4つに決め打ちなので
+		typeColor = new Color[4];
+		typeColor[0] = Color.BLUE; // あまのじゃくの色
+		typeColor[1] = Color.BLACK; // お人好しの色
+		typeColor[2] = Color.GREEN; // 裏切り者の色
+		typeColor[3] = Color.RED; // 互恵主義者の色
+		//ラベルに色のついたワクを付けるので
+		border = new Border[4];
+		for(int i=0;i<4;i++) {
+			 border[i] = new Border(new BorderStroke(typeColor[i], BorderStrokeStyle.SOLID, CornerRadii.EMPTY, BorderWidths.DEFAULT));
+		}
+		//ここがめんどくさい。label の配列を SceneBuilder で付けられないか？
+		lb0.setBorder(border[0]);
+		lb1.setBorder(border[1]);
+		lb2.setBorder(border[2]);
+		lb3.setBorder(border[3]);
 
 	} // end of initialize
 		//

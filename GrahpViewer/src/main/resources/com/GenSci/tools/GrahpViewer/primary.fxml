@@ -38,6 +38,14 @@
         <items>
             <Button fx:id="openTypeBtn" mnemonicParsing="false" onAction="#openTypeFile" text="openType" />
           <Button fx:id="saveTypeBtn" mnemonicParsing="false" text="save" />
+            <Label text="あまのじゃく" />
+            <Label fx:id="lb0" prefHeight="17.0" prefWidth="64.0" />
+            <Label text="お人好し" />
+            <Label fx:id="lb1" layoutX="184.0" layoutY="17.0" prefHeight="17.0" prefWidth="64.0" />
+            <Label text="裏切り者" />
+            <Label fx:id="lb2" layoutX="299.0" layoutY="17.0" prefHeight="17.0" prefWidth="64.0" />
+            <Label text="互恵主義者" />
+            <Label fx:id="lb3" layoutX="416.0" layoutY="17.0" prefHeight="17.0" prefWidth="64.0" />
             <CheckBox fx:id="cb0_All01" mnemonicParsing="false" text="All 0, 1" />
         </items>
       </ToolBar>
