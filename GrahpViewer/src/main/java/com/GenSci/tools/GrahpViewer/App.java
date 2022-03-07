@@ -20,6 +20,7 @@ public class App extends Application {
     	FXMLLoader fxmlLoader = new FXMLLoader(App.class.getResource("primary.fxml"));
     	scene = new Scene(fxmlLoader.load());
         stage.setScene(scene);
+        stage.setTitle("GA Viewer Type Axelrod ver 1.0");
         stage.show();
     }
 

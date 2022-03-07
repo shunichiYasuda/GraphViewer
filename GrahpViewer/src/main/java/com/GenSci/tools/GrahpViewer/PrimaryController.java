@@ -10,6 +10,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.List;
 import java.util.ResourceBundle;
 
@@ -37,11 +38,7 @@ import javafx.scene.layout.BorderStrokeStyle;
 import javafx.scene.layout.BorderWidths;
 import javafx.scene.layout.CornerRadii;
 import javafx.scene.paint.Color;
-import javafx.scene.text.Font;
-import javafx.scene.text.FontWeight;
 import javafx.stage.FileChooser;
-import javafx.stage.Stage;
-//import javafx.embed.swing.SwingFXUtils;
 
 public class PrimaryController implements Initializable {
 	@FXML
@@ -56,8 +53,6 @@ public class PrimaryController implements Initializable {
 	Button saveAveBtn;
 	@FXML
 	Button saveTypeBtn;
-	@FXML
-	TextArea log;
 	@FXML
 	Button quitBtn;
 	@FXML
@@ -89,7 +84,7 @@ public class PrimaryController implements Initializable {
 	Label lb2; // 裏切り者の数
 	@FXML
 	Label lb3; // 互恵主義者の数
-	//ラベルに枠線を付けて色分けし、わかりやすくする。
+	// ラベルに枠線を付けて色分けし、わかりやすくする。
 	Border[] border;
 	//
 	GraphicsContext gAve; // 平均値描画
@@ -119,6 +114,7 @@ public class PrimaryController implements Initializable {
 	boolean aveDataFlag = false; // 平均データを読み込んだら true にする。
 	boolean typeDataFlag = false;
 	String dir = null; // データのディレクトリ
+	String dateName; // 保存ファイルにつける日時
 
 	//
 	List<String> aveDataStr = new ArrayList<String>();// ファイルから読み込んだ平均値テーブル
@@ -130,16 +126,6 @@ public class PrimaryController implements Initializable {
 	@FXML
 	void quitAction() {
 		System.exit(0);
-	}
-
-	//
-	public void draw(GraphicsContext g, int[] data) {
-		// 与えられたデータを与えられたグラフィックスに描く
-	}
-
-	//
-	public void execAction() {
-
 	}
 
 	//
@@ -237,6 +223,21 @@ public class PrimaryController implements Initializable {
 				double v = nowExpAveData[nowGen];
 				String str = new String("" + v);
 				aveValueLabel.setText(str);
+				//もしtypeファイルが開かれていたら、それぞれの数値をラベルに表示
+				if(typeDataFlag) {
+					v = nowExpTypeData[nowGen][0];
+					str = new String(""+v);
+					lb0.setText(str);
+					v = nowExpTypeData[nowGen][1];
+					str = new String(""+v);
+					lb1.setText(str);
+					v = nowExpTypeData[nowGen][2];
+					str = new String(""+v);
+					lb2.setText(str);
+					v = nowExpTypeData[nowGen][3];
+					str = new String(""+v);
+					lb3.setText(str);
+				}
 			} // end of changed()
 
 		});
@@ -349,7 +350,7 @@ public class PrimaryController implements Initializable {
 		String str = typeDataStr.get(0);
 		// log.appendText(str + "\n");
 		String[] row = str.split("\t");
-		System.out.println("data columns =" + row.length);
+		//System.out.println("data columns =" + row.length);
 		// log.appendText(row.length + "\tgen=" + typeDataStr.size() + "\n");
 		// EXPとGENは平均値ファイルを読んだときに決められる。ファイルの形式が異なるので
 		// type ファイルから決めてはダメ。
@@ -411,7 +412,7 @@ public class PrimaryController implements Initializable {
 			}
 			// データが抜き出されたのでpixelデータを作る
 			makePixelData(xPix, yPix, nowTypeRecord, gWidth, gHeight, 100.0);
-			//stroke の色を設定
+			// stroke の色を設定
 			gType.setStroke(typeColor[j]);
 			gType.strokePolyline(xPix, yPix, GEN);
 		} // end of for(最初の4列
@@ -444,7 +445,7 @@ public class PrimaryController implements Initializable {
 					}
 					// データが抜き出されたのでpixelデータを作る
 					makePixelData(xPix, yPix, nowTypeRecord, gWidth, gHeight, 100.0);
-					//stroke の色を設定
+					// stroke の色を設定
 					gType.setStroke(typeColor[j]);
 					// 描画。
 					gType.strokePolyline(xPix, yPix, GEN);
@@ -464,6 +465,8 @@ public class PrimaryController implements Initializable {
 		fc.setTitle("open data file");
 		file = fc.showOpenDialog(null);
 		dir = file.getAbsolutePath();
+		dir = file.getParent();
+		System.out.println("dir=" + dir);
 		try {
 			FileReader fr = new FileReader(file);
 			BufferedReader br = new BufferedReader(fr);
@@ -482,17 +485,33 @@ public class PrimaryController implements Initializable {
 
 	}// end of openAction();
 		//
+		//
 
-	public void saveAction() {
+	@FXML
+	void saveAveAction() {
+		saveAction(aveCanvas,"Ave");
+	}
 
-		FileChooser savefile = new FileChooser();
-		savefile.setTitle("Save File");
+	//
+	@FXML
+	void saveTypeAction() {
+		saveAction(typeCanvas,"Type");
+	}
 
-		File file = savefile.showSaveDialog(null);
-		System.out.println("is file null ? " + file);
+	//
+	public void saveAction(Canvas c,String fileType) {
+
+		String fileName = new String(dir + "\\" + fileType+dateName +"Exp"+nowExp+ ".png");
+		//System.out.println(fileName);
+//		FileChooser savefile = new FileChooser();
+//		savefile.setTitle("Save File");
+//
+//		File file = savefile.showSaveDialog(null);
+		File file = new File(fileName);
+		//System.out.println("is file null ? " + file);
 		if (file != null) {
 			WritableImage writableImage = new WritableImage((int) width, (int) height);
-			aveCanvas.snapshot(null, writableImage);
+			c.snapshot(null, writableImage);
 			RenderedImage renderedImage = SwingFXUtils.fromFXImage(writableImage, null);
 			try {
 				ImageIO.write(renderedImage, "png", file);
@@ -532,16 +551,24 @@ public class PrimaryController implements Initializable {
 		typeColor[1] = Color.BLACK; // お人好しの色
 		typeColor[2] = Color.GREEN; // 裏切り者の色
 		typeColor[3] = Color.RED; // 互恵主義者の色
-		//ラベルに色のついたワクを付けるので
+		// ラベルに色のついたワクを付けるので
 		border = new Border[4];
-		for(int i=0;i<4;i++) {
-			 border[i] = new Border(new BorderStroke(typeColor[i], BorderStrokeStyle.SOLID, CornerRadii.EMPTY, BorderWidths.DEFAULT));
+		for (int i = 0; i < 4; i++) {
+			border[i] = new Border(
+					new BorderStroke(typeColor[i], BorderStrokeStyle.SOLID, CornerRadii.EMPTY, BorderWidths.DEFAULT));
 		}
-		//ここがめんどくさい。label の配列を SceneBuilder で付けられないか？
+		// ここがめんどくさい。label の配列を SceneBuilder で付けられないか？
 		lb0.setBorder(border[0]);
 		lb1.setBorder(border[1]);
 		lb2.setBorder(border[2]);
 		lb3.setBorder(border[3]);
+		// 保存ファイルに付ける日時
+		Calendar cal1 = Calendar.getInstance();
+		int year = cal1.get(Calendar.YEAR); // 現在の年を取得
+		int month = cal1.get(Calendar.MONTH); // 現在の月数-1を取得
+		int day = cal1.get(Calendar.DATE);
+		String[] monthArray = { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jly", "Aug", "Sep", "Oct", "Nov", "Dec" }; // 月表示を見やすくするため
+		dateName = new String(monthArray[month] + day + "_" + year);
 
 	} // end of initialize
 		//
