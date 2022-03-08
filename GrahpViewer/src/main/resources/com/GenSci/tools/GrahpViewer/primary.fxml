@@ -49,6 +49,7 @@
             <Label fx:id="lb4" prefHeight="17.0" prefWidth="73.0" />
             <Label text="All 1:" />
             <Label fx:id="lb5" layoutX="726.0" layoutY="17.0" prefHeight="17.0" prefWidth="73.0" />
+            <Button fx:id="saveAll01Btn" mnemonicParsing="false" onAction="#saveAll01Action" text="save All0,1" />
         </items>
       </ToolBar>
       <Canvas fx:id="all01Canvas" height="430.0" layoutY="525.0" width="1280.0" />

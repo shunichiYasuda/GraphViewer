@@ -54,6 +54,8 @@ public class PrimaryController implements Initializable {
 	@FXML
 	Button saveTypeBtn;
 	@FXML
+	Button saveAll01Btn;
+	@FXML
 	Button quitBtn;
 	@FXML
 	Canvas aveCanvas;
@@ -546,7 +548,7 @@ public class PrimaryController implements Initializable {
 		file = fc.showOpenDialog(null);
 		dir = file.getAbsolutePath();
 		dir = file.getParent();
-		System.out.println("dir=" + dir);
+		//System.out.println("dir=" + dir);
 		try {
 			FileReader fr = new FileReader(file);
 			BufferedReader br = new BufferedReader(fr);
@@ -577,12 +579,15 @@ public class PrimaryController implements Initializable {
 	void saveTypeAction() {
 		saveAction(typeCanvas, "Type");
 	}
+	@FXML
+	void saveAll01Action() {
+		saveAction(all01Canvas,"All01");
+	}
 
 	//
 	public void saveAction(Canvas c, String fileType) {
 
 		String fileName = new String(dir + "\\" + fileType + dateName + "Exp" + nowExp + ".png");
-		// System.out.println(fileName);
 //		FileChooser savefile = new FileChooser();
 //		savefile.setTitle("Save File");
 //
