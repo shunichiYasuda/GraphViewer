@@ -44,8 +44,13 @@
             <Label fx:id="lb2" layoutX="299.0" layoutY="17.0" prefHeight="17.0" prefWidth="64.0" />
             <Label text="互恵主義者" />
             <Label fx:id="lb3" layoutX="416.0" layoutY="17.0" prefHeight="17.0" prefWidth="64.0" />
-            <CheckBox fx:id="cb0_All01" mnemonicParsing="false" text="All 0, 1" />
+            <CheckBox fx:id="cb_All01" mnemonicParsing="false" onAction="#checkBtnCange" prefHeight="17.0" prefWidth="88.0" text="All 0,1" />
+            <Label prefHeight="17.0" prefWidth="45.0" text="All 0:" />
+            <Label fx:id="lb4" prefHeight="17.0" prefWidth="73.0" />
+            <Label text="All 1:" />
+            <Label fx:id="lb5" layoutX="726.0" layoutY="17.0" prefHeight="17.0" prefWidth="73.0" />
         </items>
       </ToolBar>
+      <Canvas fx:id="all01Canvas" height="430.0" layoutY="525.0" width="1280.0" />
    </children>
 </Pane>

@@ -19,6 +19,7 @@ import javax.imageio.ImageIO;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.embed.swing.SwingFXUtils;
+import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.canvas.Canvas;
@@ -29,7 +30,6 @@ import javafx.scene.control.Label;
 import javafx.scene.control.Slider;
 import javafx.scene.control.Spinner;
 import javafx.scene.control.SpinnerValueFactory;
-import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.image.WritableImage;
 import javafx.scene.layout.Border;
@@ -64,6 +64,8 @@ public class PrimaryController implements Initializable {
 	@FXML
 	Canvas typeCanvas;
 	@FXML
+	Canvas all01Canvas;
+	@FXML
 	private Spinner<Integer> expSpinner;
 	@FXML
 	Slider genSlider;
@@ -73,7 +75,7 @@ public class PrimaryController implements Initializable {
 	@FXML
 	Label aveValueLabel;
 	@FXML
-	CheckBox cb_All01;
+	private CheckBox cb_All01;
 	//
 	Color[] typeColor; // type別グラフの色
 	@FXML
@@ -84,6 +86,10 @@ public class PrimaryController implements Initializable {
 	Label lb2; // 裏切り者の数
 	@FXML
 	Label lb3; // 互恵主義者の数
+	@FXML
+	Label lb4; //All 0（記憶領域がすべて0：協力）の数
+	@FXML
+	Label lb5; //All 1（記憶領域がすべて0：裏切り）の数
 	// ラベルに枠線を付けて色分けし、わかりやすくする。
 	Border[] border;
 	//
@@ -91,6 +97,7 @@ public class PrimaryController implements Initializable {
 	GraphicsContext gType; // タイプ別比率描画
 	GraphicsContext gAveLine; // 平均値世代線
 	GraphicsContext gTypeLine; // タイプ別比率世代線
+	GraphicsContext gAll01;
 	//
 	// ファイルが読まれた後から設定されてしまうパラメータ
 	int GEN; // 世代数
@@ -101,6 +108,7 @@ public class PrimaryController implements Initializable {
 	double[][] typeDataTable;
 	double[] nowExpAveData; // 実験番号が定まった後から中身が入る平均値
 	double[][] nowExpTypeData; // 実験番号が定まった後から中身が入るタイプ別個体比率
+	double[][] nowExpAll01Data; // 実験番号が定まった後から中身が入る All 0,1 個体比率。
 	//
 
 	//
@@ -126,6 +134,21 @@ public class PrimaryController implements Initializable {
 	@FXML
 	void quitAction() {
 		System.exit(0);
+	}
+
+	// checkbox action
+	public void checkBtnCange(ActionEvent event) {
+		if (!typeDataFlag)
+			return;
+		if (cb_All01.isSelected()) {
+			// System.out.println("selected");
+			all01Canvas.toFront();
+			typeLineCanvas.toFront();
+		} else {
+			// System.out.println("unselected");
+			typeCanvas.toFront();
+			typeLineCanvas.toFront();
+		}
 	}
 
 	//
@@ -223,20 +246,26 @@ public class PrimaryController implements Initializable {
 				double v = nowExpAveData[nowGen];
 				String str = new String("" + v);
 				aveValueLabel.setText(str);
-				//もしtypeファイルが開かれていたら、それぞれの数値をラベルに表示
-				if(typeDataFlag) {
+				// もしtypeファイルが開かれていたら、それぞれの数値をラベルに表示
+				if (typeDataFlag) {
 					v = nowExpTypeData[nowGen][0];
-					str = new String(""+v);
+					str = new String("" + v);
 					lb0.setText(str);
 					v = nowExpTypeData[nowGen][1];
-					str = new String(""+v);
+					str = new String("" + v);
 					lb1.setText(str);
 					v = nowExpTypeData[nowGen][2];
-					str = new String(""+v);
+					str = new String("" + v);
 					lb2.setText(str);
 					v = nowExpTypeData[nowGen][3];
-					str = new String(""+v);
+					str = new String("" + v);
 					lb3.setText(str);
+					v= nowExpAll01Data[nowGen][0];
+					str = new String("" + v);
+					lb4.setText(str);
+					v= nowExpAll01Data[nowGen][1];
+					str = new String("" + v);
+					lb5.setText(str);
 				}
 			} // end of changed()
 
@@ -350,7 +379,7 @@ public class PrimaryController implements Initializable {
 		String str = typeDataStr.get(0);
 		// log.appendText(str + "\n");
 		String[] row = str.split("\t");
-		//System.out.println("data columns =" + row.length);
+		// System.out.println("data columns =" + row.length);
 		// log.appendText(row.length + "\tgen=" + typeDataStr.size() + "\n");
 		// EXPとGENは平均値ファイルを読んだときに決められる。ファイルの形式が異なるので
 		// type ファイルから決めてはダメ。
@@ -364,17 +393,28 @@ public class PrimaryController implements Initializable {
 				typeDataTable[i][j] = Double.parseDouble(row[j]);
 			}
 		}
+		//データチェック
+//		for(double[] array: typeDataTable) {
+//			for(double d: array) {
+//				System.out.print(d+"\t");
+//			}
+//			System.out.println();
+//		}
 		// ここではファイルを開いた最初なので実験番号は0だとして、
 		// nowExpTypeData[][] に0番目の実験結果を書き込む.0番目の実験なので行数はGENである。
 		// 0行目から入れていく。
 		nowExpTypeData = new double[GEN][row.length];
-
+		// Canvas all01Canvas を作成する。データはすでにtypeDataTable に入っているので、typeデータを作成した
+		// のと同じように nowExpAll01Data[][]を作ってその実験回のデータを保存しておく。
+		nowExpAll01Data = new double[GEN][2];
 		//
 		typeDataFlag = true;
 		// 横軸（世代軸）は2つのCanvasで共通なのでgraphicContext を渡して作成する。
 		drawXAxis(gType);
+		drawXAxis(gAll01);
 		// 縦軸も共通だが、最大値が異なるため最大値も渡す。
 		drawYAxis(gType, 100.0);
+		drawYAxis(gAll01, 100.0);
 		// 考え方を根本的に変える Mar06。
 		// 最初の4列（type別個体数）を最初に書いておいて、チェックボタンで別のcanvas に
 		// のこり2つを描いておき、チェックボタンで表示させるようにする。だからその処理はあとでいい。
@@ -382,6 +422,7 @@ public class PrimaryController implements Initializable {
 		// 平均値データが先に読み込まれているとすれば、nowGen に値は入っているのだから
 		// すぐにChangeLestener でよいのでは。
 		double[] nowTypeRecord = new double[GEN];
+		double[] nowAll01Record = new double[GEN];
 		// strokPolyLine に渡すための pxel 配列
 		double[] yPix = new double[GEN];
 		double[] xPix = new double[GEN];
@@ -395,16 +436,19 @@ public class PrimaryController implements Initializable {
 				count++;
 			}
 		}
+		// nowExpAll01Data は2列なのでループと別に処理
+		for (int i = 0; i < GEN; i++) {
+			nowExpAll01Data[i][0] = typeDataTable[nowExp * GEN+i][4];
+			nowExpAll01Data[i][1] = typeDataTable[nowExp * GEN+i][5];
+		}
 		// データチェック
-//		for(double[] array: nowExpTypeData) {
+//		for(double[] array: nowExpAll01Data) {
 //			for(double d : array) {
 //				System.out.print(d+"\t");
 //			}
 //			System.out.println();
 //		}
-		// 軸を描く
-		drawXAxis(gType);
-		drawYAxis(gType, 100.0);
+
 		// こんどはnowExpTypeDataテーブルから一つずつ列を取り出す。
 		for (int j = 0; j < 4; j++) {
 			for (int i = 0; i < GEN; i++) {
@@ -416,6 +460,18 @@ public class PrimaryController implements Initializable {
 			gType.setStroke(typeColor[j]);
 			gType.strokePolyline(xPix, yPix, GEN);
 		} // end of for(最初の4列
+			// All01 のグラフを描く
+		for (int j = 0; j < 2; j++) {
+			for (int i = 0; i < GEN; i++) {
+				nowAll01Record[i] = nowExpAll01Data[i][j];
+			}
+			// データが抜き出されたのでpixelデータを作る
+			makePixelData(xPix, yPix, nowAll01Record, gWidth, gHeight, 100.0);
+			// stroke の色を設定
+			gAll01.setStroke(typeColor[j]);
+			gAll01.strokePolyline(xPix, yPix, GEN);
+			all01Canvas.toBack();
+		}
 		expSpinner.valueProperty().addListener(new ChangeListener<Integer>() {
 			@Override
 			public void changed(ObservableValue<? extends Integer> observable, Integer oldValue, Integer newValue) {
@@ -427,6 +483,14 @@ public class PrimaryController implements Initializable {
 				gType.setStroke(Color.BLACK);
 				drawXAxis(gType);
 				drawYAxis(gType, 100.0);
+				//All 01
+				gAll01.clearRect(0, 0, width, height);
+				gAll01.setFill(Color.WHITE);
+				gAll01.fillRect(0, 0, width, height);
+				gAll01.setStroke(Color.BLACK);
+				drawXAxis(gAll01);
+				drawYAxis(gAll01, 100.0);
+				//
 				nowExp = expSpinner.getValue();
 				// typeファイルの場合は実験ごとにテーブルが更新されるので、スピナー値が変わるたびに
 				// テーブルが書き換えられなければならない。
@@ -437,6 +501,11 @@ public class PrimaryController implements Initializable {
 						nowExpTypeData[count][j] = typeDataTable[nowExp * GEN + count][j];
 						count++;
 					}
+				}
+				// nowExpAll01Data は2列なのでループと別に処理
+				for (int i = 0; i < GEN; i++) {
+					nowExpAll01Data[i][0] = typeDataTable[nowExp * GEN+i][4];
+					nowExpAll01Data[i][1] = typeDataTable[nowExp * GEN+i][5];
 				}
 				// こんどはnowExpTypeDataテーブルから一つずつ列を取り出す。
 				for (int j = 0; j < 4; j++) {
@@ -450,8 +519,19 @@ public class PrimaryController implements Initializable {
 					// 描画。
 					gType.strokePolyline(xPix, yPix, GEN);
 				}
-
 				// end of for(最初の4列
+				for (int j = 0; j < 2; j++) {
+					for (int i = 0; i < GEN; i++) {
+						nowAll01Record[i] = nowExpAll01Data[i][j];
+						//System.out.println("exp="+nowExp+": All "+ nowAll01Record[i]);
+					}
+					// データが抜き出されたのでpixelデータを作る
+					makePixelData(xPix, yPix, nowAll01Record, gWidth, gHeight, 100.0);
+					// stroke の色を設定
+					gAll01.setStroke(typeColor[j]);
+					gAll01.strokePolyline(xPix, yPix, GEN);
+					//all01Canvas.toBack();
+				}
 
 			} // end of changed(...
 		});
@@ -489,26 +569,26 @@ public class PrimaryController implements Initializable {
 
 	@FXML
 	void saveAveAction() {
-		saveAction(aveCanvas,"Ave");
+		saveAction(aveCanvas, "Ave");
 	}
 
 	//
 	@FXML
 	void saveTypeAction() {
-		saveAction(typeCanvas,"Type");
+		saveAction(typeCanvas, "Type");
 	}
 
 	//
-	public void saveAction(Canvas c,String fileType) {
+	public void saveAction(Canvas c, String fileType) {
 
-		String fileName = new String(dir + "\\" + fileType+dateName +"Exp"+nowExp+ ".png");
-		//System.out.println(fileName);
+		String fileName = new String(dir + "\\" + fileType + dateName + "Exp" + nowExp + ".png");
+		// System.out.println(fileName);
 //		FileChooser savefile = new FileChooser();
 //		savefile.setTitle("Save File");
 //
 //		File file = savefile.showSaveDialog(null);
 		File file = new File(fileName);
-		//System.out.println("is file null ? " + file);
+		// System.out.println("is file null ? " + file);
 		if (file != null) {
 			WritableImage writableImage = new WritableImage((int) width, (int) height);
 			c.snapshot(null, writableImage);
@@ -529,6 +609,7 @@ public class PrimaryController implements Initializable {
 		gType = typeCanvas.getGraphicsContext2D();
 		gAveLine = aveLineCanvas.getGraphicsContext2D();
 		gTypeLine = typeLineCanvas.getGraphicsContext2D();
+		gAll01 = all01Canvas.getGraphicsContext2D();
 		//
 		// Canvas size の取得。すべてのCanvasで同じにしておく。のは難しいので SceneBuilder で設定。
 		width = aveCanvas.getWidth();
@@ -538,6 +619,8 @@ public class PrimaryController implements Initializable {
 		gAve.fillRect(0, 0, width, height);
 		gType.setFill(Color.WHITE);
 		gType.fillRect(0, 0, width, height);
+		gAll01.setFill(Color.WHITE);
+		gAll01.fillRect(0, 0, width, height);
 		// グラフエリアの上限下限・左右
 		top = margin;
 		bottom = (int) height - margin;
@@ -562,6 +645,8 @@ public class PrimaryController implements Initializable {
 		lb1.setBorder(border[1]);
 		lb2.setBorder(border[2]);
 		lb3.setBorder(border[3]);
+		lb4.setBorder(border[0]);
+		lb5.setBorder(border[1]);
 		// 保存ファイルに付ける日時
 		Calendar cal1 = Calendar.getInstance();
 		int year = cal1.get(Calendar.YEAR); // 現在の年を取得
