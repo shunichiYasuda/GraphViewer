@@ -545,10 +545,13 @@ public class PrimaryController implements Initializable {
 		FileChooser fc = new FileChooser();
 		File file;
 		fc.setTitle("open data file");
-		file = fc.showOpenDialog(null);
-		dir = file.getAbsolutePath();
-		dir = file.getParent();
-		//System.out.println("dir=" + dir);
+		if(dir != null) {
+			fc.setInitialDirectory(new File(dir));
+			file = fc.showOpenDialog(null);
+		}else {
+			file = fc.showOpenDialog(null);
+			dir = file.getParent();
+		}
 		try {
 			FileReader fr = new FileReader(file);
 			BufferedReader br = new BufferedReader(fr);
